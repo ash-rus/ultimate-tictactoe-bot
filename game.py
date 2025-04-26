@@ -50,11 +50,18 @@ def get_next_subboard(last_move_index, board):
     if all(cell in (6, 7) for cell in board[next_subboard_index]):
         playable = [
             i for i, sub in enumerate(board)
-            if any(cell in (0, 1, 2) for cell in sub)
+            if any(cell in (0, 1, 2, 3, 4, 5) for cell in sub)
         ]
         return playable if playable else None
     else:
-        return [next_subboard_index]
+        if any(cell in (0, 1, 2, 3, 4, 5) for cell in board[next_subboard_index]):
+            return [next_subboard_index]
+        else:
+            playable = [
+                i for i, sub in enumerate(board)
+                if any(cell in (0, 1, 2, 3, 4, 5) for cell in sub)
+            ]
+            return playable if playable else None
 
 def check_for_end(board):
     capture_patterns = [
@@ -171,9 +178,11 @@ def main():
             board[subboard] = [7] * 9
         result = check_for_end(board)
         if result == 1:
+            print_ultimate_board(board, [])
             print("X wins the game!")
             break
         elif result == 2:
+            print_ultimate_board(board, [])
             print("O wins the game!")
             break
         current_allowed_subboards = get_next_subboard(idx, board)
