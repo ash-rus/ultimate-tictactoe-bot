@@ -23,36 +23,25 @@ def get_next_subboard(last_move_index, board, captured_subboards):
     next_subboard_index = last_move_index % 9
     last_subboard = last_move_index // 9
     
-    # Rule 1: If the player is sent to a playable subboard, they will play there.
     if next_subboard_index not in captured_subboards and any(cell == 0 for cell in board[next_subboard_index]):
-        return [next_subboard_index]  # The next subboard is playable.
+        return [next_subboard_index]
     
-    # Rule 4: If the player is sent to an unplayable subboard AND the last played subboard is full,
-    # the next player will be able to play in any uncaptured subboard that is not filled.
     if all(cell != 0 for cell in board[last_subboard]):
         return [
             i for i in range(9)
             if i not in captured_subboards and not all(cell != 0 for cell in board[i])
-        ] or None  # Return any uncaptured subboard that is not fully filled.
+        ] or None
 
-    # Rule 3: If the player is sent to an unplayable subboard AND the last played subboard is also now unplayable,
-    # the next player will be able to play in any uncaptured subboard that corresponds to an open tile in the last played subboard.
     if last_subboard in captured_subboards or all(cell != 0 for cell in board[last_subboard]):
-        # Return subboards that correspond to open tiles in the last played subboard
         open_tiles_in_last_subboard = [
             i for i in range(9) if board[last_subboard][i % 3 + (i // 3) * 3] == 0
         ]
         return [
             i for i in open_tiles_in_last_subboard
             if i not in captured_subboards
-        ] or None  # Return uncaptured subboards with open spots in the last played subboard.
+        ] or None
 
-    # Rule 2: If the player is sent to an unplayable subboard, they will play in the subboard that was just played in.
-    return [last_subboard]  # The player will play in the subboard just played in.
-
-
-
-
+    return [last_subboard]
 
 def check_for_capture(subboard):
     lines = [
