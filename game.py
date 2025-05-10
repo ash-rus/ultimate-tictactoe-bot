@@ -88,7 +88,7 @@ def simulate_games(n=1000):
     plt.show()
 
 
-def main(mode="AvR"):
+def main(mode="AvR", time_max=0.1):
     board = [[0] * 9 for _ in range(9)]
     captured_subboards = [0] * 9
     allowed_subboards = [4]
@@ -134,7 +134,7 @@ def main(mode="AvR"):
             if player_type[player_turn] == "ai":
                 print(f"AI Player {'X' if player_turn == 1 else 'O'} is thinking...")
                 mcts_node = MonteCarloTreeSearchNode(state)
-                best_action = mcts_node.best_action(time_limit=0.1)
+                best_action = mcts_node.best_action(time_limit=time_max)
                 idx = best_action
             elif player_type[player_turn] == "random":
                 print(f"Random Player {'X' if player_turn == 1 else 'O'} is choosing...")
