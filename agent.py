@@ -1,11 +1,9 @@
-# agent.py
-
 import math
 import numpy as np
 import time
 from collections import defaultdict
-from game_logic import check_for_capture, check_for_end, get_valid_indices, get_next_subboard, print_ultimate_board
 import random
+from game_logic import check_for_capture, check_for_end, get_valid_indices, get_next_subboard, print_ultimate_board
 
 class UltimateTicTacToeState():
     def __init__(self, board, allowed_subboards, captured_subboards, player_turn):
@@ -14,7 +12,6 @@ class UltimateTicTacToeState():
         self.captured_subboards = captured_subboards
         self.player_turn = player_turn
 
-    # Update in your UltimateTicTacToeState class:
     def get_legal_actions(self):
         return get_valid_indices(self.board, self.allowed_subboards, self.captured_subboards)
 
@@ -24,14 +21,15 @@ class UltimateTicTacToeState():
             return True
         return False
 
-    def game_result(self):
+    def game_result(self, root_player):
         winner = check_for_end(self.captured_subboards)
-        if winner == 1:
-            return 1  # Agent wins
-        elif winner == 2:
-            return -1  # Opponent wins
+        if winner == root_player:
+            return 1
+        elif winner == 0 or winner == -1:
+            return 0
         else:
-            return 0  # Draw
+            return -1
+
 
     def move(self, action):
         if isinstance(action, int):
@@ -63,16 +61,6 @@ class UltimateTicTacToeState():
             new_captured_subboards,
             3 - self.player_turn
         )
-
-
-
-
-    
-    def switch_player(self):
-        return 3 - self.player_turn  # If player is 1, it becomes 2; if player is 2, it becomes 1.
-    
-    def get_reward(self):
-        return self.game_result()
 
 
 
@@ -116,16 +104,12 @@ class MonteCarloTreeSearchNode():
         current_rollout_state = self.state
         while not current_rollout_state.is_game_over():
             legal_actions = current_rollout_state.get_legal_actions()
-            # print("legal actions: ", legal_actions)
-            # print("Current rollout board:")
-            # print_ultimate_board(current_rollout_state.board, [], current_rollout_state.captured_subboards)
             if not legal_actions:
                 break
             move = self.heuristic_move(current_rollout_state, legal_actions)
             current_rollout_state = current_rollout_state.move(move)
-            # REMOVE THIS LINE
-            # current_rollout_state = current_rollout_state.switch_player()
-        return current_rollout_state.get_reward()
+        return current_rollout_state.game_result(self.root_player)
+
 
     def heuristic_move(self, state, legal_actions):
         player = state.player_turn
@@ -146,16 +130,19 @@ class MonteCarloTreeSearchNode():
 
         # 2. Block opponent from winning a local board
         for move in legal_actions:
-            if causes_subboard_capture(move, opponent):
-                return move
+            board_idx = move // 9
+            cell_idx = move % 9
+
+            test_board = [sub[:] for sub in state.board]
+            test_board[board_idx][cell_idx] = opponent
+
+            if check_for_capture(test_board[board_idx]) == opponent:
+                if move in legal_actions:
+                    return move
 
         # 3. Play to a subboard that isn’t yet captured
         uncaptured_targets = [m for m in legal_actions if captured[m % 9] == 0]
         if uncaptured_targets:
-            # 3a. Prefer center of uncaptured subboards
-            center_moves = [m for m in uncaptured_targets if m % 9 == 4]
-            if center_moves:
-                return random.choice(center_moves)
             return random.choice(uncaptured_targets)
 
         # 4. Fallback: play center anywhere or random legal move
@@ -165,19 +152,8 @@ class MonteCarloTreeSearchNode():
 
         return random.choice(legal_actions)
 
-
-
-
-
-
-
-
-
-
     def backpropagate(self, result):
         self._number_of_visits += 1
-        if self.state.player_turn != self.root_player:
-            result = -result
         self._results[result] += 1
         if self.parent:
             self.parent.backpropagate(result)
@@ -189,7 +165,7 @@ class MonteCarloTreeSearchNode():
 
     def best_child(self, c_param=1.4):
         if not self.children:
-            return None  # Changed from raising ValueError
+            return None
 
         choices_weights = [
             (child.q() / child.n()) + c_param * math.sqrt((2 * math.log(self.n()) / child.n()))
@@ -226,23 +202,16 @@ class MonteCarloTreeSearchNode():
             v.backpropagate(reward)
             num_simulations += 1
 
-        print(f"[MCTS] Completed {num_simulations} simulations in {time_limit:.2f} seconds.")
+        # print(f"[MCTS] Completed {num_simulations} simulations in {time_limit:.2f} seconds.")
 
         min_simulations = max(50, num_simulations * 0.05)
         if not self.children:
             legal_actions = self.state.get_legal_actions()
             if legal_actions:
-                print("[MCTS] No children generated, returning random legal move.")
                 return random.choice(legal_actions)
             raise ValueError("MCTS failed to find any valid moves.")
 
         most_visited = max(self.children, key=lambda c: c.n())
         best_value = self.best_child(c_param=0)
 
-        if most_visited.n() >= min_simulations:
-            print(f"[MCTS] Returning most visited move with {most_visited.n()} visits.")
-            return most_visited.parent_action
-        else:
-            print(f"[MCTS] Returning highest value move with {best_value.n()} visits.")
-            return best_value.parent_action
-
+        return most_visited.parent_action

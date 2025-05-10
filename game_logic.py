@@ -16,11 +16,11 @@ def get_valid_indices(board, allowed_subboards, captured_subboards):
     
     for sub_idx in allowed_subboards:
         if captured_subboards[sub_idx] != 0:
-            continue  # Skip subboards that are captured
+            continue
         
-        for cell_idx in range(9):  # Each subboard has 9 cells
-            if board[sub_idx][cell_idx] == 0:  # Check if the cell is empty
-                valid_indices.append(sub_idx * 9 + cell_idx)  # Add index in global board
+        for cell_idx in range(9):  
+            if board[sub_idx][cell_idx] == 0:
+                valid_indices.append(sub_idx * 9 + cell_idx)
     return valid_indices
 
 def is_valid_move(board, index):
@@ -55,10 +55,11 @@ def get_next_subboard(last_move_index, board, captured_subboards):
         open_tiles_in_last_subboard = [
             i for i in range(9) if board[last_subboard][i % 3 + (i // 3) * 3] == 0
         ]
-        return [
-            i for i in open_tiles_in_last_subboard
-            if i not in captured_subboards
-        ] or None
+        if open_tiles_in_last_subboard:
+            return [
+                i for i in open_tiles_in_last_subboard
+                if i not in captured_subboards
+            ] or None
 
     return [last_subboard]
 
@@ -74,25 +75,23 @@ def check_for_capture(subboard):
     return 0
 
 def check_for_end(captured_subboards):
-    # Example implementation of checking for a winner
-    # It should check for a complete line of captured subboards
     winning_lines = [
-        [0, 1, 2], [3, 4, 5], [6, 7, 8],  # Horizontal lines
-        [0, 3, 6], [1, 4, 7], [2, 5, 8],  # Vertical lines
-        [0, 4, 8], [2, 4, 6]  # Diagonal lines
+        [0, 1, 2], [3, 4, 5], [6, 7, 8],
+        [0, 3, 6], [1, 4, 7], [2, 5, 8],
+        [0, 4, 8], [2, 4, 6]
     ]
 
     for line in winning_lines:
         values = [captured_subboards[i] for i in line]
         if values == [1, 1, 1]:
-            return 1  # Player 1 wins
+            return 1
         elif values == [2, 2, 2]:
-            return 2  # Player 2 wins
+            return 2
 
     if all(x != 0 for x in captured_subboards):
-        return 0  # Draw if all subboards are captured
+        return 0
 
-    return -1  # Game is not over
+    return -1
 
 
 def print_ultimate_board(board, allowed_subboards, captured_subboards):
